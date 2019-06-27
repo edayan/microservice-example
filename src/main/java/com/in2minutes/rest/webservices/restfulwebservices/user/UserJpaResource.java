@@ -21,6 +21,9 @@ public class UserJpaResource {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PostRepository postRepository;
+
     @GetMapping("/jpa/users")
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -61,6 +64,24 @@ public class UserJpaResource {
             throw new UserNotFoundException("userId:" + userId);
         }
         return user.get().getPosts();
+    }
+
+    @PostMapping("/jpa/users/{userId}/posts")
+    public ResponseEntity<Object> createPost(@PathVariable int userId, @Valid @RequestBody Post post) {
+
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (!userOptional.isPresent()) {
+            throw new UserNotFoundException("userId:" + userId);
+        }
+        User user = userOptional.get();
+        post.setUser(user);
+        postRepository.save(post);
+        final URI uri = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(post.getId())
+                .toUri();
+        return ResponseEntity.created(uri).build();
     }
 
 }
